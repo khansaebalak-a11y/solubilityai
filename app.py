@@ -598,9 +598,13 @@ def calc_features(smiles):
         'FractionCSP3': Descriptors.FractionCSP3(mol),
     }
     desc = np.array([[desc_map[c] for c in _DESC_COLS]], dtype=np.float32)
-    desc_sc = scaler.transform(desc) if scaler is not None else desc
-    X = np.hstack([arr, desc_sc])
-    return X, mol
+   desc = np.array([[desc_map[c] for c in _DESC_COLS]], dtype=np.float32)
+
+desc_sc = scaler.transform(desc) if scaler is not None else desc
+
+X = np.hstack([arr, desc_sc])
+
+return X, mol
 
 
 def _physico_estimate(mol):
