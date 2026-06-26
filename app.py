@@ -1475,7 +1475,7 @@ elif st.session_state.page == 'analyse':
             et constituent des pistes de recherche. Toute modification doit être validée
             expérimentalement.<br>
             <span style="color:#4a6a7a;font-style:italic;margin-top:4px;display:block;">
-              Conformément aux recommandations de M. El Fakir (encadrant).</span>
+              </span>
           </div>
         </div>
         </div>""", unsafe_allow_html=True)
