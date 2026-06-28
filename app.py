@@ -802,27 +802,74 @@ with st.sidebar:
         text-transform:uppercase;padding:14px 18px 4px;">Navigation</div>
     """, unsafe_allow_html=True)
 
-    # Navigation HTML pure — aucun st.button = aucun label parasite
-    nav_items_html = ''
+    # Navigation via st.button natifs Streamlit (même onglet, pas de nouvel onglet)
     for pid, icon, label in NAV:
-        is_active = st.session_state.page == pid
-        active_style = (
-            'color:#e2e8f0;border-left:3px solid #38b2ac;background:rgba(56,178,172,.08);'
-            if is_active else
-            'color:#6b8fa8;border-left:3px solid transparent;background:transparent;'
+        clicked = st.button(
+            f"{icon}  {label}",
+            key=f"nav_{pid}",
+            use_container_width=True,
         )
-        nav_items_html += (
-            f'<a href="?page={pid}" style="'
-            f'display:flex;align-items:center;gap:10px;'
-            f'text-decoration:none;{active_style}'
-            f'font-size:13px;font-weight:500;padding:10px 20px;'
-            f'font-family:Inter,sans-serif;letter-spacing:.01em;'
-            f'width:100%;box-sizing:border-box;">'
-            f'<span style="font-size:15px;line-height:1;">{icon}</span>'
-            f'<span>{label}</span>'
-            f'</a>'
-        )
-    st.markdown(nav_items_html, unsafe_allow_html=True)
+        if clicked and st.session_state.page != pid:
+            st.session_state.page = pid
+            st.session_state.analyse_result = None
+            st.query_params['page'] = pid
+            st.rerun()
+
+    # JS : colorier le bouton actif et supprimer les labels parasites
+    active_page = st.session_state.page
+    st.markdown(f"""
+    <style>
+    section[data-testid="stSidebar"] .stButton {{
+        margin: 0 !important;
+        padding: 0 !important;
+    }}
+    /* Cacher les labels vides générés par Streamlit au-dessus des boutons */
+    section[data-testid="stSidebar"] .stButton > div > label,
+    section[data-testid="stSidebar"] .stButton [data-testid="stWidgetLabel"],
+    section[data-testid="stSidebar"] [data-testid="InputInstructions"] {{
+        display: none !important;
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }}
+    </style>
+    <script>
+    (function applyActive() {{
+        var btns = document.querySelectorAll(
+            'section[data-testid="stSidebar"] button'
+        );
+        var activeLabel = '{active_page}';
+        var navMap = {{
+            'dashboard': 'Dashboard',
+            'modeles': 'Mod\u00e8les',
+            'shap': 'SHAP',
+            'analyse': 'Analyse',
+            'historique': 'Historique'
+        }};
+        var activeText = navMap[activeLabel] || '';
+        btns.forEach(function(b) {{
+            var txt = b.innerText || '';
+            if (activeText && txt.indexOf(activeText) !== -1) {{
+                b.style.setProperty('color', '#e2e8f0', 'important');
+                b.style.setProperty('border-left', '3px solid #38b2ac', 'important');
+                b.style.setProperty('background', 'rgba(56,178,172,.08)', 'important');
+            }} else {{
+                b.style.removeProperty('color');
+                b.style.removeProperty('border-left');
+                b.style.removeProperty('background');
+            }}
+        }});
+        // Cacher labels vides (p tags vides ou quasi-vides)
+        var labels = document.querySelectorAll(
+            'section[data-testid="stSidebar"] .stButton p'
+        );
+        labels.forEach(function(p) {{
+            if (!p.innerText.trim()) p.style.display = 'none';
+        }});
+    }})();
+    setTimeout(function() {{ applyActive && applyActive(); }}, 300);
+    </script>
+    """, unsafe_allow_html=True)
 
     model_status = '🟢 Backend connecté' if model else '🟡 Mode démo'
     st.markdown(f"""
