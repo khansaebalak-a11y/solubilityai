@@ -12,7 +12,6 @@ import pandas as pd
 import joblib
 import io, base64
 from pathlib import Path
-from streamlit.components.v1 import html as components_html
 from rdkit import Chem
 from rdkit.Chem import Draw, Descriptors, Lipinski, rdMolDescriptors
 import warnings
@@ -28,15 +27,17 @@ st.set_page_config(
 OUT_DIR = Path('outputs')
 
 # ══════════════════════════════════════════════════════════════════
-# CSS GLOBAL — dark mode
+# CSS GLOBAL — dark mode fidèle à la capture
 # ══════════════════════════════════════════════════════════════════
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
+/* ── Reset & base ── */
 *, *::before, *::after { box-sizing: border-box; font-family: 'Inter', sans-serif !important; }
 #MainMenu, footer, header { visibility: hidden; }
 
+/* ── Fond global dark ── */
 html, body,
 [data-testid="stAppViewContainer"],
 [data-testid="stMain"],
@@ -57,65 +58,17 @@ section.main, .main {
 [data-testid="stVerticalBlock"],
 [data-testid="stHorizontalBlock"] { background: transparent !important; }
 
-/* ── Sidebar — masquée sur mobile ── */
+/* ── Sidebar ── */
 section[data-testid="stSidebar"] {
     background: #0d1525 !important;
-    border-right: 1px solid rgba(255,255,255,.06) !important;
+    min-width: 200px !important;
+    max-width: 200px !important;
+    border-right: 1px solid rgba(255,255,255,.06);
 }
 section[data-testid="stSidebar"] > div:first-child { padding: 0 !important; }
 section[data-testid="stSidebar"] .block-container {
     padding: 0 !important;
     background: #0d1525 !important;
-}
-
-/* ── Navigation mobile (bottom bar fixe) ── */
-.mobile-nav {
-    display: none;
-}
-@media (max-width: 768px) {
-    /* Cacher la sidebar sur mobile */
-    section[data-testid="stSidebar"] {
-        display: none !important;
-    }
-    /* Afficher la nav mobile */
-    .mobile-nav {
-        display: flex !important;
-        position: fixed;
-        bottom: 0; left: 0; right: 0;
-        background: #0d1525;
-        border-top: 1px solid rgba(255,255,255,.08);
-        z-index: 9999;
-        padding: 6px 4px 10px;
-        justify-content: space-around;
-        align-items: center;
-    }
-    .mobile-nav-btn {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 3px;
-        padding: 6px 10px;
-        border-radius: 10px;
-        cursor: pointer;
-        border: none;
-        background: transparent;
-        color: #4a6a7a;
-        font-size: 10px;
-        font-weight: 600;
-        font-family: 'Inter', sans-serif;
-        letter-spacing: .02em;
-        transition: color .15s, background .15s;
-        text-decoration: none;
-    }
-    .mobile-nav-btn .nav-icon { font-size: 20px; line-height: 1; }
-    .mobile-nav-btn.active {
-        color: #38b2ac;
-        background: rgba(56,178,172,.12);
-    }
-    /* Padding bas pour ne pas cacher le contenu derrière la nav */
-    .block-container {
-        padding-bottom: 80px !important;
-    }
 }
 
 /* Nav buttons */
@@ -143,7 +96,7 @@ section[data-testid="stSidebar"] .stButton > button:hover {
     box-shadow: none !important;
 }
 
-/* ── Default button ── */
+/* ── Default button (green) ── */
 .stButton > button {
     background: linear-gradient(135deg, #38b2ac, #4299e1) !important;
     color: white !important;
@@ -193,7 +146,7 @@ section[data-testid="stSidebar"] .stButton > button:hover {
     margin-bottom: 12px;
 }
 
-/* ── Stat cards ── */
+/* ── Stat cards (4 KPI) ── */
 .stat-dk {
     background: #121c2e;
     border: 1px solid rgba(255,255,255,.07);
@@ -267,7 +220,7 @@ section[data-testid="stSidebar"] .stButton > button:hover {
     margin: 0 0 8px;
     line-height: 1.2;
 }
-.hero-title .hl  { color: #63b3ed; }
+.hero-title .hl { color: #63b3ed; }
 .hero-title .hl2 { color: #f093fb; }
 .hero-desc  { color: #7a9ab8; font-size: 12.5px; line-height: 1.65; max-width: 480px; }
 .hero-badges { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
@@ -281,7 +234,7 @@ section[data-testid="stSidebar"] .stButton > button:hover {
     font-weight: 500;
 }
 
-/* ── Perf table ── */
+/* ── Perf table (dark) ── */
 .perf-dk { width: 100%; border-collapse: collapse; }
 .perf-dk th {
     font-size: 10px; font-weight: 700; color: #4a6a7a;
@@ -304,21 +257,44 @@ section[data-testid="stSidebar"] .stButton > button:hover {
     padding: 2px 8px; border-radius: 8px;
     border: 1px solid rgba(56,178,172,.25);
 }
+
+/* Bar cells */
 .bar-cell { display: flex; align-items: center; gap: 8px; }
 .bar-track-dk { flex: 1; background: rgba(255,255,255,.06);
     border-radius: 4px; height: 6px; overflow: hidden; }
 .bar-fill-dk { height: 6px; border-radius: 4px; }
 
-/* ── Mol list ── */
-.mol-card-inner {
-    background: #121c2e;
-    border: 1px solid rgba(255,255,255,.07);
-    border-radius: 12px;
-    padding: 18px 22px;
-    margin-bottom: 14px;
+/* ── Mol example list ── */
+.mol-row {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 9px 0 !important;
+    border-bottom: 1px solid rgba(255,255,255,.05) !important;
+}
+.mol-row:last-child {
+    border-bottom: none !important;
+}
+.mol-name {
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    color: #d0e4f5 !important;
+}
+.mol-smi {
+    font-size: 9px !important;
+    color: #4a6a7a !important;
+    font-family: 'Courier New', monospace !important;
+}
+.mol-logS {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+}
+.mol-unit {
+    font-size: 9px !important;
+    color: #4a6a7a !important;
 }
 
-/* ── Info cards ── */
+/* ── Info cards (bottom 3) ── */
 .info-dk {
     background: #121c2e;
     border: 1px solid rgba(255,255,255,.07);
@@ -329,10 +305,14 @@ section[data-testid="stSidebar"] .stButton > button:hover {
 .info-dk-text  { font-size: 11px; color: #4a6a7a; line-height: 1.55; }
 
 /* ── Section title ── */
-.sec-title { font-size: 14px; font-weight: 700; color: #d0e4f5; margin-bottom: 3px; }
-.sec-sub   { font-size: 11px; color: #4a6a7a; margin-bottom: 14px; }
+.sec-title {
+    font-size: 14px; font-weight: 700; color: #d0e4f5; margin-bottom: 3px;
+}
+.sec-sub {
+    font-size: 11px; color: #4a6a7a; margin-bottom: 14px;
+}
 
-/* ── Top bar ── */
+/* ── Sidebar header (top bar) ── */
 .topbar-wrap {
     display: flex; justify-content: space-between; align-items: center;
     margin-bottom: 20px;
@@ -379,14 +359,14 @@ section[data-testid="stSidebar"] .stButton > button:hover {
 .reco-impact    { font-size: 20px; font-weight: 700; color: #38b2ac; }
 .reco-ref       { font-size: 10px; color: #4a6a7a; margin-top: 4px; line-height: 1.5; }
 
-/* ── Lipinski checks ── */
+/* ── Lip checks ── */
 .lip-row-dk { display: flex; align-items: flex-start; gap: 10px;
     padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.05); }
 .lip-row-dk:last-child { border-bottom: none; }
 .lip-label-dk { font-size: 12px; font-weight: 600; color: #c8dae8; }
 .lip-val-dk   { font-size: 11px; color: #4a6a7a; }
 
-/* ── History table ── */
+/* ── Hist table ── */
 .hist-dk { width: 100%; border-collapse: collapse; }
 .hist-dk th { font-size: 10px; font-weight: 700; color: #4a6a7a;
     text-transform: uppercase; letter-spacing: .07em;
@@ -398,25 +378,33 @@ section[data-testid="stSidebar"] .stButton > button:hover {
 .hist-dk tr:hover td { background: rgba(255,255,255,.02); }
 .err-ok   { background: rgba(56,178,172,.15); color: #38b2ac;
     font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 8px; }
-.err-warn { background: rgba(246,174,45,.15); color: #f6ae2d;
+.err-warn { background: rgba(246,174,45,.15);  color: #f6ae2d;
     font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 8px; }
 
 /* ── Gauge ── */
 .gauge-container {
-    position: relative; width: 100%; height: 10px;
-    border-radius: 6px; margin: 8px 0;
+    position: relative;
+    width: 100%;
+    height: 10px;
+    border-radius: 6px;
+    margin: 8px 0;
 }
 .gauge-track {
-    width: 100%; height: 100%; border-radius: 6px;
-    background: linear-gradient(to right,
+    width: 100%;
+    height: 100%;
+    border-radius: 6px;
+    background: linear-gradient(to right, 
         #f5576c 0%, #f5576c 25%,
         #f6ae2d 25%, #f6ae2d 50%,
         #4299e1 50%, #4299e1 75%,
         #38b2ac 75%, #38b2ac 100%);
 }
 .gauge-cursor {
-    position: absolute; top: -8px; transform: translateX(-50%);
-    width: 0; height: 0;
+    position: absolute;
+    top: -8px;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
     border-left: 7px solid transparent;
     border-right: 7px solid transparent;
     border-top: 13px solid #f0f6ff;
@@ -452,8 +440,10 @@ div[data-baseweb="select"] {
     margin-top: 18px;
 }
 
+/* ── Warnings / success ── */
 div[data-testid="stAlert"] { border-radius: 10px !important; }
 
+/* ── SVG chart ── */
 .svg-chart-wrap { background: #121c2e; border-radius: 12px;
     padding: 20px 22px; border: 1px solid rgba(255,255,255,.07); }
 
@@ -468,7 +458,7 @@ div[data-testid="stAlert"] { border-radius: 10px !important; }
 .mp-kpi-sub-dk  { font-size: 11px; color: #38b2ac; margin-top: 4px; font-weight: 600; }
 .mp-kpi-cv-dk   { font-size: 11px; color: #4a6a7a; margin-top: 3px; }
 
-/* ── Rankings table ── */
+/* ── Rankings table dark ── */
 .rk-dk { width: 100%; border-collapse: collapse; }
 .rk-dk th { font-size: 10px; color: #4a6a7a; text-transform: uppercase;
     letter-spacing: .08em; padding: 8px 12px;
@@ -515,7 +505,7 @@ def load_results():
 
 
 model, scaler = load_assets()
-results_df    = load_results()
+results_df = load_results()
 
 RANK_COLORS = ['#38b2ac', '#4299e1', '#e67e22', '#e74c3c', '#8e44ad']
 ordered     = results_df.sort_values('R2_Test', ascending=False).reset_index(drop=True)
@@ -528,6 +518,7 @@ BEST_R2_CV   = float(ordered.iloc[0].get('R2_CV',   BEST_R2   - .013))
 BEST_RMSE_CV = float(ordered.iloc[0].get('RMSE_CV', BEST_RMSE - .055))
 BEST_MAE_CV  = float(ordered.iloc[0].get('MAE_CV',  BEST_MAE  - .007))
 
+# ── Descriptor columns ──────────────────────────────────────────
 _DESC_COLS_DEFAULT = [
     'MolWt', 'MolLogP', 'TPSA', 'NumHDonors', 'NumHAcceptors',
     'NumRotBonds', 'NumAromRings', 'HeavyAtomCount', 'RingCount', 'FractionCSP3',
@@ -539,6 +530,7 @@ try:
 except Exception:
     _DESC_COLS = _DESC_COLS_DEFAULT
 
+# ── Example molecules ────────────────────────────────────────────
 MOLS = {
     'Aspirine':    ('CC(=O)Oc1ccccc1C(=O)O',           -1.81),
     'Paracetamol': ('CC(=O)Nc1ccc(O)cc1',              -0.89),
@@ -605,7 +597,7 @@ def calc_features(smiles):
         'RingCount': Lipinski.RingCount(mol),
         'FractionCSP3': Descriptors.FractionCSP3(mol),
     }
-    desc   = np.array([[desc_map[c] for c in _DESC_COLS]], dtype=np.float32)
+    desc = np.array([[desc_map[c] for c in _DESC_COLS]], dtype=np.float32)
     desc_sc = scaler.transform(desc) if scaler is not None else desc
     X = np.hstack([arr, desc_sc])
     return X, mol
@@ -768,9 +760,8 @@ NAV = [
     ('historique', '🕒', 'Historique'),
 ]
 
-
 # ══════════════════════════════════════════════════════════════════
-# SIDEBAR  — correction : plus de st.rerun()
+# SIDEBAR
 # ══════════════════════════════════════════════════════════════════
 with st.sidebar:
     st.markdown(f"""
@@ -789,11 +780,13 @@ with st.sidebar:
         text-transform:uppercase;padding:14px 18px 4px;">Navigation</div>
     """, unsafe_allow_html=True)
 
-    # ── Navigation : on change juste st.session_state.page, pas de st.rerun()
+    # Navigation buttons
     for pid, icon, label in NAV:
         if st.button(f"{icon}  {label}", key=f"nav_{pid}", use_container_width=True):
-            st.session_state.page = pid
-            st.session_state.analyse_result = None
+            if st.session_state.page != pid:
+                st.session_state.page = pid
+                st.session_state.analyse_result = None
+                st.rerun()
 
     model_status = '🟢 Backend connecté' if model else '🟡 Mode démo'
     st.markdown(f"""
@@ -808,28 +801,6 @@ with st.sidebar:
 # SHARED HELPERS
 # ══════════════════════════════════════════════════════════════════
 def topbar(title, sub):
-    current = st.session_state.page
-    nav_items = [
-        ('dashboard',  '📊', 'Dashboard'),
-        ('modeles',    '📈', 'Modèles'),
-        ('shap',       '🔍', 'SHAP'),
-        ('analyse',    '🧬', 'Analyse'),
-        ('historique', '🕒', 'Historique'),
-    ]
-    nav_btns_html = ''
-    for pid, icon, label in nav_items:
-        active = 'active' if pid == current else ''
-        nav_btns_html += f"""
-        <button class="mobile-nav-btn {active}" onclick="
-            var btns = window.parent.document.querySelectorAll('[data-testid=stSidebar] button');
-            var labels = Array.from(btns).map(function(b){{return b.innerText.trim();}});
-            var idx = labels.findIndex(function(l){{return l.includes('{label}');}});
-            if (idx >= 0) {{ btns[idx].click(); }}
-        ">
-          <span class="nav-icon">{icon}</span>
-          <span>{label}</span>
-        </button>"""
-
     st.markdown(f"""
     <div class="topbar-wrap">
       <div>
@@ -837,9 +808,7 @@ def topbar(title, sub):
         <div class="topbar-sub">{sub}</div>
       </div>
       <div class="topbar-badge">⚡ {BEST_NAME} &nbsp;R²={BEST_R2:.3f}</div>
-    </div>
-    <div class="mobile-nav">{nav_btns_html}</div>
-    """, unsafe_allow_html=True)
+    </div>""", unsafe_allow_html=True)
 
 
 def footer():
@@ -856,6 +825,7 @@ def footer():
 if st.session_state.page == 'dashboard':
     topbar('Dashboard', 'Prédiction de solubilité moléculaire avec IA explicable')
 
+    # ── Hero banner ──────────────────────────────────────────────
     st.markdown(f"""
     <div class="hero-banner">
       <div class="hero-tag">MACHINE LEARNING PIPELINE</div>
@@ -876,14 +846,14 @@ if st.session_state.page == 'dashboard':
       </div>
     </div>""", unsafe_allow_html=True)
 
-    # 4 KPI cards
+    # ── 4 Stat cards ─────────────────────────────────────────────
     kpi_cols = st.columns(4)
     kpis = [
         ('MEILLEUR MODÈLE', BEST_NAME, f'R² = {BEST_R2:.3f}', '📊', 'teal'),
-        ('RMSE MOYEN', f"{results_df['RMSE_Test'].mean():.2f}",
+        ('RMSE MOYEN',      f"{results_df['RMSE_Test'].mean():.2f}",
          f"{len(results_df)} modèles comparés", '📈', 'blue'),
         ('MOLÉCULES TEST', '1 228', '20% du dataset BigSolDB', '🧪', 'purple'),
-        ('PRÉCISION', f"{int(BEST_R2 * 100)}%", 'variance expliquée (R²)', '⚡', 'rose'),
+        ('PRÉCISION',      f"{int(BEST_R2 * 100)}%", 'variance expliquée (R²)', '⚡', 'rose'),
     ]
     for col, (lbl, val, sub, icon, color) in zip(kpi_cols, kpis):
         with col:
@@ -897,9 +867,11 @@ if st.session_state.page == 'dashboard':
 
     st.markdown('<div style="height:14px;"></div>', unsafe_allow_html=True)
 
+    # ── Performance table + Mol examples ─────────────────────────
     cl, cr = st.columns([3, 1.3])
 
     with cl:
+        # Build table rows with progress bars
         max_rmse = float(ordered['RMSE_Test'].max())
         max_mae  = float(ordered['MAE_Test'].max())
         rows_html = ''
@@ -909,6 +881,7 @@ if st.session_state.page == 'dashboard':
             r2c = '#38b2ac' if i == 0 else '#4299e1'
             rw  = row['RMSE_Test'] / max_rmse * 100
             mw  = row['MAE_Test']  / max_mae  * 100
+            rc  = RANK_COLORS[min(i, 4)]
             rows_html += f"""
             <tr>
               <td><span class="rank-circle" style="background:{c};">{i+1}</span></td>
@@ -942,44 +915,51 @@ if st.session_state.page == 'dashboard':
           </div>
           <table class="perf-dk">
             <thead>
-              <tr><th>#</th><th>MODÈLE</th><th>RMSE</th><th>MAE</th><th>R²</th></tr>
+              <tr>
+                <th>#</th><th>MODÈLE</th><th>RMSE</th><th>MAE</th><th>R²</th>
+              </tr>
             </thead>
             <tbody>{rows_html}</tbody>
           </table>
         </div>""", unsafe_allow_html=True)
 
     with cr:
-        # ── Molécules exemples — rendu pur st.markdown (pas de composant iframe)
-        rows_mol = ''
+        # ═══════════════════════════════════════════════════════════
+        # SECTION MOLÉCULES EXEMPLES - SOLUTION ULTIME
+        # ═══════════════════════════════════════════════════════════
+        from streamlit.components.v1 import html
+        
+        # Construire le HTML
+        html_molecules = """
+        <div style="background: #121c2e; border: 1px solid rgba(255,255,255,.07); border-radius: 12px; padding: 18px 22px; margin-bottom: 14px; font-family: 'Inter', sans-serif;">
+          <div style="font-size: 14px; font-weight: 700; color: #d0e4f5; margin-bottom: 3px;">Molécules exemples</div>
+          <div style="font-size: 11px; color: #4a6a7a; margin-bottom: 14px;">Solubilité prédite (LogS)</div>
+        """
+        
         for nom, (smi, lr) in MOLS.items():
             lpv, _ood, _ = predict_logs(smi)
             val = f"{lpv:.2f}" if lpv is not None else f"{lr:.2f}"
             _, clr, _ = get_cat(lpv if lpv is not None else lr)
-            label = MOL_LABELS.get(nom, nom)
-            smi_short = smi[:22] + '…'
-            rows_mol += f"""
-            <div style="display:flex;justify-content:space-between;align-items:center;
-                padding:9px 0;border-bottom:1px solid rgba(255,255,255,.05);">
+            
+            html_molecules += f"""
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,.05);">
               <div>
-                <div style="font-size:12px;font-weight:700;color:#d0e4f5;">{label}</div>
-                <div style="font-size:9px;color:#4a6a7a;font-family:'Courier New',monospace;">{smi_short}</div>
+                <div style="font-size: 12px; font-weight: 700; color: #d0e4f5;">{MOL_LABELS.get(nom, nom)}</div>
+                <div style="font-size: 9px; color: #4a6a7a; font-family: 'Courier New', monospace;">{smi[:22]}…</div>
               </div>
-              <div style="text-align:right;">
-                <div style="font-size:14px;font-weight:700;color:{clr};">{val}</div>
-                <div style="font-size:9px;color:#4a6a7a;">LogS</div>
+              <div style="text-align: right;">
+                <div style="font-size: 14px; font-weight: 700; color: {clr};">{val}</div>
+                <div style="font-size: 9px; color: #4a6a7a;">LogS</div>
               </div>
-            </div>"""
+            </div>
+            """
+        
+        html_molecules += "</div>"
+        
+        # Utiliser st.components.v1.html pour forcer le rendu HTML
+        html(html_molecules, height=280)
 
-        st.markdown(f"""
-        <div class="mol-card-inner">
-          <div style="font-size:14px;font-weight:700;color:#d0e4f5;margin-bottom:3px;">
-            Molécules exemples</div>
-          <div style="font-size:11px;color:#4a6a7a;margin-bottom:14px;">
-            Solubilité prédite (LogS)</div>
-          {rows_mol}
-        </div>""", unsafe_allow_html=True)
-
-    # Info cards
+    # ── Info cards (3 cols) ──────────────────────────────────────
     i1, i2, i3 = st.columns(3)
     with i1:
         st.markdown("""
@@ -1012,12 +992,13 @@ if st.session_state.page == 'dashboard':
 elif st.session_state.page == 'modeles':
     topbar('Model Performance', 'Comparaison complète des modèles entraînés')
 
+    # KPI row
     k1, k2, k3, k4 = st.columns(4)
     for col, (lbl, val, sub, cv) in zip([k1, k2, k3, k4], [
-        ('BEST MODEL',  BEST_NAME,         f'↑ R² = {BEST_R2:.3f}', ''),
-        ('R² (TEST)',   f'{BEST_R2:.3f}',  '', f'CV: {BEST_R2_CV:.3f}'),
-        ('RMSE (TEST)', f'{BEST_RMSE:.3f}','', f'CV: {BEST_RMSE_CV:.3f}'),
-        ('MAE (TEST)',  f'{BEST_MAE:.3f}', '', f'CV: {BEST_MAE_CV:.3f}'),
+        ('BEST MODEL',   BEST_NAME,         f'↑ R² = {BEST_R2:.3f}', ''),
+        ('R² (TEST)',    f'{BEST_R2:.3f}',  '', f'CV: {BEST_R2_CV:.3f}'),
+        ('RMSE (TEST)',  f'{BEST_RMSE:.3f}','', f'CV: {BEST_RMSE_CV:.3f}'),
+        ('MAE (TEST)',   f'{BEST_MAE:.3f}', '', f'CV: {BEST_MAE_CV:.3f}'),
     ]):
         with col:
             sub_h = f'<div class="mp-kpi-sub-dk">{sub}</div>' if sub else ''
@@ -1036,7 +1017,7 @@ elif st.session_state.page == 'modeles':
     rmse_cv_list   = (ordered['RMSE_CV'].tolist()
                       if 'RMSE_CV' in ordered.columns
                       else [v * 0.88 for v in rmse_test_list])
-    models_list = ordered['Modèle'].tolist()
+    models_list    = ordered['Modèle'].tolist()
     n = len(models_list)
 
     CW, CH, PL, PB, PT, PR = 620, 200, 48, 36, 30, 20
@@ -1050,10 +1031,10 @@ elif st.session_state.page == 'modeles':
 
     bars, labs, grid = '', '', ''
     for i, (m, rt, rc) in enumerate(zip(models_list, rmse_test_list, rmse_cv_list)):
-        gx = PL + i * gw + gw * 0.08
-        xt = gx
-        xc = gx + bw + gb
-        yt = yp(rt); yc = yp(rc); bot = PT + CH
+        gx  = PL + i * gw + gw * 0.08
+        xt  = gx
+        xc  = gx + bw + gb
+        yt  = yp(rt); yc = yp(rc); bot = PT + CH
         bars += (
             f'<rect x="{xt:.1f}" y="{yt:.1f}" width="{bw}" height="{bot-yt:.1f}" rx="3" fill="#4299e1"/>'
             f'<text x="{xt+bw/2:.1f}" y="{yt-5:.1f}" text-anchor="middle" font-size="10" fill="#6b8fa8">{rt:.3f}</text>'
@@ -1096,6 +1077,7 @@ elif st.session_state.page == 'modeles':
 
     st.markdown('<div style="height:14px;"></div>', unsafe_allow_html=True)
 
+    # Rankings table
     rk_rows = ''
     for i, row in ordered.iterrows():
         c   = RANK_COLORS[min(i, 4)]
@@ -1203,6 +1185,7 @@ elif st.session_state.page == 'shap':
           </div>
         </div>""", unsafe_allow_html=True)
 
+    # Guide interp
     st.markdown("""
     <div class="dk-card">
       <div class="sec-title">Guide d'interprétation</div>
@@ -1224,6 +1207,7 @@ elif st.session_state.page == 'shap':
       </div>
     </div>""", unsafe_allow_html=True)
 
+    # Global SHAP importance
     try:
         shap_df = pd.read_csv(OUT_DIR / 'shap_importance.csv').head(12)
     except Exception:
@@ -1294,6 +1278,7 @@ elif st.session_state.page == 'analyse':
                 'erreur': abs(lr_h - lpv) if lr_h is not None and lpv is not None else None,
             })
 
+    # Input zone
     st.markdown("""
     <div class="dk-card" style="margin-bottom:14px;">
       <div class="sec-title">⚗️ Analyser une molécule</div>
@@ -1422,6 +1407,7 @@ elif st.session_state.page == 'analyse':
           </div>
         </div>""", unsafe_allow_html=True)
 
+        # Recommendations
         n_prob = sum(1 for rc in recos if rc['type'] in ('danger', 'warn'))
         border_c = '#f5576c' if n_prob > 0 else '#38b2ac'
 
@@ -1440,6 +1426,7 @@ elif st.session_state.page == 'analyse':
         """, unsafe_allow_html=True)
 
         for rc in recos:
+            border_map = {'ok': '#38b2ac', 'warn': '#f6ae2d', 'danger': '#f5576c'}
             bdg_map = {
                 'ok':     ('rgba(56,178,172,.15)', '#38b2ac', '✅ Profil optimal'),
                 'warn':   ('rgba(246,174,45,.15)', '#f6ae2d', '⚠️ Amélioration suggérée'),
@@ -1486,7 +1473,9 @@ elif st.session_state.page == 'analyse':
           <div style="font-size:11px;color:#6a8a9a;line-height:1.6;">
             Ces suggestions s'appuient sur des règles structurales reconnues (Lipinski, Ertl, Abraham)
             et constituent des pistes de recherche. Toute modification doit être validée
-            expérimentalement.
+            expérimentalement.<br>
+            <span style="color:#4a6a7a;font-style:italic;margin-top:4px;display:block;">
+              Conformément aux recommandations de M. El Fakir (encadrant).</span>
           </div>
         </div>
         </div>""", unsafe_allow_html=True)
