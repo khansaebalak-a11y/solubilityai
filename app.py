@@ -802,13 +802,27 @@ with st.sidebar:
         text-transform:uppercase;padding:14px 18px 4px;">Navigation</div>
     """, unsafe_allow_html=True)
 
+    # Navigation HTML pure — aucun st.button = aucun label parasite
+    nav_items_html = ''
     for pid, icon, label in NAV:
-        if st.button(f"{icon}  {label}", key=f"nav_{pid}", use_container_width=True):
-            if st.session_state.page != pid:
-                st.session_state.page = pid
-                st.session_state.analyse_result = None
-                st.query_params['page'] = pid
-                st.rerun()
+        is_active = st.session_state.page == pid
+        active_style = (
+            'color:#e2e8f0;border-left:3px solid #38b2ac;background:rgba(56,178,172,.08);'
+            if is_active else
+            'color:#6b8fa8;border-left:3px solid transparent;background:transparent;'
+        )
+        nav_items_html += (
+            f'<a href="?page={pid}" style="'
+            f'display:flex;align-items:center;gap:10px;'
+            f'text-decoration:none;{active_style}'
+            f'font-size:13px;font-weight:500;padding:10px 20px;'
+            f'font-family:Inter,sans-serif;letter-spacing:.01em;'
+            f'width:100%;box-sizing:border-box;">'
+            f'<span style="font-size:15px;line-height:1;">{icon}</span>'
+            f'<span>{label}</span>'
+            f'</a>'
+        )
+    st.markdown(nav_items_html, unsafe_allow_html=True)
 
     model_status = '🟢 Backend connecté' if model else '🟡 Mode démo'
     st.markdown(f"""
