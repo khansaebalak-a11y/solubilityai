@@ -927,29 +927,35 @@ if st.session_state.page == 'dashboard':
 
     with cr:
         mol_rows_html = ''
+        courier = 'Courier New, monospace'
         for nom, (smi, lr) in MOLS.items():
             lpv, _ood, _ = predict_logs(smi)
             val = f"{lpv:.2f}" if lpv is not None else f"{lr:.2f}"
             _, clr, _ = get_cat(lpv if lpv is not None else lr)
-            mol_rows_html += f"""
-            <div style="display:flex;justify-content:space-between;align-items:center;
-                padding:9px 0;border-bottom:1px solid rgba(255,255,255,.05);">
-              <div>
-                <div style="font-size:12px;font-weight:700;color:#d0e4f5;">{MOL_LABELS.get(nom, nom)}</div>
-                <div style="font-size:9px;color:#4a6a7a;font-family:'Courier New',monospace;">{smi[:22]}…</div>
-              </div>
-              <div style="text-align:right;">
-                <div style="font-size:14px;font-weight:700;color:{clr};">{val}</div>
-                <div style="font-size:9px;color:#4a6a7a;">LogS</div>
-              </div>
-            </div>"""
+            label = MOL_LABELS.get(nom, nom)
+            smi_short = smi[:22] + '…'
+            mol_rows_html += (
+                '<div style="display:flex;justify-content:space-between;align-items:center;'
+                'padding:9px 0;border-bottom:1px solid rgba(255,255,255,.05);">'
+                '<div>'
+                f'<div style="font-size:12px;font-weight:700;color:#d0e4f5;">{label}</div>'
+                f'<div style="font-size:9px;color:#4a6a7a;font-family:{courier};">{smi_short}</div>'
+                '</div>'
+                '<div style="text-align:right;">'
+                f'<div style="font-size:14px;font-weight:700;color:{clr};">{val}</div>'
+                '<div style="font-size:9px;color:#4a6a7a;">LogS</div>'
+                '</div>'
+                '</div>'
+            )
 
-        st.markdown(f"""
-        <div class="dk-card">
-          <div class="sec-title">Molécules exemples</div>
-          <div class="sec-sub">Solubilité prédite (LogS)</div>
-          {mol_rows_html}
-        </div>""", unsafe_allow_html=True)
+        st.markdown(
+            '<div class="dk-card">'
+            '<div class="sec-title">Mol&eacute;cules exemples</div>'
+            '<div class="sec-sub">Solubilit&eacute; pr&eacute;dite (LogS)</div>'
+            + mol_rows_html +
+            '</div>',
+            unsafe_allow_html=True
+        )
 
     i1, i2, i3 = st.columns(3)
     with i1:
