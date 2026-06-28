@@ -405,17 +405,17 @@ div[data-testid="stAlert"] { border-radius: 10px !important; }
 .rk-best-dk { color: #38b2ac !important; font-weight: 700 !important; }
 
 /* ══════════════════════════════════════════
-   MOBILE NAV — sidebar visible desktop, nav bas sur mobile
+   MOBILE NAV — barre fixe en bas (mobile uniquement)
    ══════════════════════════════════════════ */
 
-/* Barre du bas : cachée sur desktop par défaut */
+/* Mobile nav toujours cachée par défaut */
 .mobile-nav {
     display: none !important;
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
-    z-index: 9999;
+    z-index: 99999;
     background: #0d1525;
     border-top: 1px solid rgba(255,255,255,.1);
     padding: 6px 0 14px;
@@ -423,32 +423,14 @@ div[data-testid="stAlert"] { border-radius: 10px !important; }
     align-items: center;
 }
 
-/* DESKTOP : sidebar visible, mobile-nav cachée */
-@media screen and (min-width: 768px) {
-    .mobile-nav {
-        display: none !important;
-    }
-    section[data-testid="stSidebar"] {
-        display: flex !important;
-        visibility: visible !important;
-    }
+/* Classe activée par JS sur mobile */
+.mobile-nav.visible {
+    display: flex !important;
 }
 
-/* MOBILE : sidebar cachée, barre du bas visible */
-@media screen and (max-width: 767px) {
-    section[data-testid="stSidebar"],
-    [data-testid="collapsedControl"] {
-        display: none !important;
-        visibility: hidden !important;
-    }
-    .block-container {
-        padding-bottom: 90px !important;
-        padding-left: 0.8rem !important;
-        padding-right: 0.8rem !important;
-    }
-    .mobile-nav {
-        display: flex !important;
-    }
+/* Padding bas quand mobile-nav visible */
+.mobile-padding .block-container {
+    padding-bottom: 90px !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -786,32 +768,44 @@ with st.sidebar:
 
 
 # ══════════════════════════════════════════════════════════════════
-# MOBILE BOTTOM NAV — affiché uniquement sur mobile via CSS
+# MOBILE BOTTOM NAV — détection JS, visible uniquement sur mobile
 # ══════════════════════════════════════════════════════════════════
 nav_btns_html = ''
 for pid, icon, label in NAV:
     is_active = st.session_state.page == pid
-    active_style = (
-        'color:#38b2ac;border-top:2px solid #38b2ac;padding-top:4px;'
-        if is_active
-        else 'color:#4a6a7a;border-top:2px solid transparent;padding-top:4px;'
+    txt_color = '#38b2ac' if is_active else '#4a6a7a'
+    border_top = '2px solid #38b2ac' if is_active else '2px solid transparent'
+    nav_btns_html += (
+        f'<a href="?page={pid}" style="'
+        f'flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;'
+        f'text-decoration:none;color:{txt_color};border-top:{border_top};'
+        f'padding-top:4px;font-size:10px;font-family:Inter,sans-serif;font-weight:600;">'
+        f'<span style="font-size:20px;line-height:1;">{icon}</span>'
+        f'<span>{label}</span>'
+        f'</a>'
     )
-    nav_btns_html += f"""
-    <a href="?page={pid}" style="
-        flex:1;display:flex;flex-direction:column;
-        align-items:center;gap:2px;text-decoration:none;
-        {active_style}
-        font-size:10px;font-family:Inter,sans-serif;font-weight:600;
-        transition:color .15s;
-    ">
-      <span style="font-size:20px;line-height:1;">{icon}</span>
-      <span>{label}</span>
-    </a>"""
 
-st.markdown(
-    f'<div class="mobile-nav">{nav_btns_html}</div>',
-    unsafe_allow_html=True
+# Script JS : affiche la barre UNIQUEMENT si écran < 768px
+# Ne touche PAS à la sidebar (gérée par Streamlit)
+mobile_nav_html = (
+    '<div class="mobile-nav" id="mobileNav">' + nav_btns_html + '</div>'
+    '<script>'
+    'function applyMobileNav() {'
+    '  var nav = document.getElementById("mobileNav");'
+    '  if (!nav) return;'
+    '  if (window.innerWidth < 768) {'
+    '    nav.style.display = "flex";'
+    '    document.body.classList.add("mobile-padding");'
+    '  } else {'
+    '    nav.style.display = "none";'
+    '    document.body.classList.remove("mobile-padding");'
+    '  }'
+    '}'
+    'applyMobileNav();'
+    'window.addEventListener("resize", applyMobileNav);'
+    '</script>'
 )
+st.markdown(mobile_nav_html, unsafe_allow_html=True)
 
 
 # ══════════════════════════════════════════════════════════════════
