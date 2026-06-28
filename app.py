@@ -1,5 +1,5 @@
 """
-SolubilityAI — Dark Mode UI + Mobile Nav Fix
+SolubilityAI — Dark Mode UI + Mobile Nav Fix + Sidebar Desktop Fix
 """
 
 import streamlit as st
@@ -49,16 +49,48 @@ section.main, .main {
 [data-testid="stVerticalBlock"],
 [data-testid="stHorizontalBlock"] { background: transparent !important; }
 
+/* ══════════════════════════════════════════
+   SIDEBAR — FORCER L'AFFICHAGE SUR DESKTOP
+   ══════════════════════════════════════════ */
 section[data-testid="stSidebar"] {
     background: #0d1525 !important;
-    min-width: 200px !important;
-    max-width: 200px !important;
-    border-right: 1px solid rgba(255,255,255,.06);
+    min-width: 220px !important;
+    max-width: 220px !important;
+    width: 220px !important;
+    border-right: 1px solid rgba(255,255,255,.06) !important;
+    display: flex !important;
+    visibility: visible !important;
+    transform: none !important;
+    left: 0 !important;
+    position: relative !important;
+    z-index: 100 !important;
 }
 section[data-testid="stSidebar"] > div:first-child { padding: 0 !important; }
 section[data-testid="stSidebar"] .block-container {
     padding: 0 !important;
     background: #0d1525 !important;
+}
+
+/* Cacher le bouton collapse sur desktop */
+@media (min-width: 768px) {
+    [data-testid="collapsedControl"] {
+        display: none !important;
+    }
+    section[data-testid="stSidebar"] {
+        transform: none !important;
+        margin-left: 0 !important;
+        left: 0 !important;
+        display: flex !important;
+        visibility: visible !important;
+    }
+    /* Annuler l'animation de fermeture Streamlit */
+    section[data-testid="stSidebar"][aria-expanded="false"] {
+        transform: none !important;
+        display: flex !important;
+        visibility: visible !important;
+        min-width: 220px !important;
+        width: 220px !important;
+    }
 }
 
 section[data-testid="stSidebar"] .stButton > button {
@@ -337,7 +369,7 @@ section[data-testid="stSidebar"] .stButton > button:hover {
 .gauge-container { position: relative; width: 100%; height: 10px; border-radius: 6px; margin: 8px 0; }
 .gauge-track {
     width: 100%; height: 100%; border-radius: 6px;
-    background: linear-gradient(to right, 
+    background: linear-gradient(to right,
         #f5576c 0%, #f5576c 25%,
         #f6ae2d 25%, #f6ae2d 50%,
         #4299e1 50%, #4299e1 75%,
@@ -407,8 +439,6 @@ div[data-testid="stAlert"] { border-radius: 10px !important; }
 /* ══════════════════════════════════════════
    MOBILE NAV — barre fixe en bas (mobile uniquement)
    ══════════════════════════════════════════ */
-
-/* Mobile nav toujours cachée par défaut */
 .mobile-nav {
     display: none !important;
     position: fixed;
@@ -422,17 +452,40 @@ div[data-testid="stAlert"] { border-radius: 10px !important; }
     justify-content: space-around;
     align-items: center;
 }
-
-/* Classe activée par JS sur mobile */
 .mobile-nav.visible {
     display: flex !important;
 }
-
-/* Padding bas quand mobile-nav visible */
 .mobile-padding .block-container {
     padding-bottom: 90px !important;
 }
 </style>
+""", unsafe_allow_html=True)
+
+# ── JS : forcer la sidebar ouverte sur desktop ────────────────────
+st.markdown("""
+<script>
+(function() {
+    function fixSidebar() {
+        if (window.innerWidth >= 768) {
+            var sb = document.querySelector('section[data-testid="stSidebar"]');
+            if (sb) {
+                sb.style.transform  = 'none';
+                sb.style.display    = 'flex';
+                sb.style.visibility = 'visible';
+                sb.style.minWidth   = '220px';
+                sb.style.width      = '220px';
+                sb.setAttribute('aria-expanded', 'true');
+            }
+            // Cacher le bouton collapse
+            var btn = document.querySelector('[data-testid="collapsedControl"]');
+            if (btn) btn.style.display = 'none';
+        }
+    }
+    fixSidebar();
+    setInterval(fixSidebar, 500);
+    window.addEventListener('resize', fixSidebar);
+})();
+</script>
 """, unsafe_allow_html=True)
 
 
@@ -714,7 +767,6 @@ for k, v in [
     if k not in st.session_state:
         st.session_state[k] = v
 
-# ── Lire la page depuis l'URL (navigation mobile) ────────────────
 params = st.query_params
 if 'page' in params:
     p = params['page']
@@ -768,7 +820,7 @@ with st.sidebar:
 
 
 # ══════════════════════════════════════════════════════════════════
-# MOBILE BOTTOM NAV — détection JS, visible uniquement sur mobile
+# MOBILE BOTTOM NAV
 # ══════════════════════════════════════════════════════════════════
 nav_btns_html = ''
 for pid, icon, label in NAV:
@@ -785,8 +837,6 @@ for pid, icon, label in NAV:
         f'</a>'
     )
 
-# Script JS : affiche la barre UNIQUEMENT si écran < 768px
-# Ne touche PAS à la sidebar (gérée par Streamlit)
 mobile_nav_html = (
     '<div class="mobile-nav" id="mobileNav">' + nav_btns_html + '</div>'
     '<script>'
