@@ -1,5 +1,5 @@
 """
-SolubilityAI — Dark Mode UI + Mobile Nav Fix + Sidebar Desktop Fix
+SolubilityAI — Dark Mode UI + Mobile Nav Fix (CSS-only) + Sidebar Desktop Fix
 """
 
 import streamlit as st
@@ -71,7 +71,6 @@ section[data-testid="stSidebar"] .block-container {
     background: #0d1525 !important;
 }
 
-/* Cacher le bouton collapse sur desktop */
 @media (min-width: 768px) {
     [data-testid="collapsedControl"] {
         display: none !important;
@@ -83,7 +82,6 @@ section[data-testid="stSidebar"] .block-container {
         display: flex !important;
         visibility: visible !important;
     }
-    /* Annuler l'animation de fermeture Streamlit */
     section[data-testid="stSidebar"][aria-expanded="false"] {
         transform: none !important;
         display: flex !important;
@@ -437,10 +435,11 @@ div[data-testid="stAlert"] { border-radius: 10px !important; }
 .rk-best-dk { color: #38b2ac !important; font-weight: 700 !important; }
 
 /* ══════════════════════════════════════════
-   MOBILE NAV — barre fixe en bas (mobile uniquement)
+   MOBILE NAV — CSS PURE (pas de JavaScript)
+   S'affiche automatiquement sous 768px
    ══════════════════════════════════════════ */
 .mobile-nav {
-    display: none !important;
+    display: none;
     position: fixed;
     bottom: 0;
     left: 0;
@@ -452,11 +451,18 @@ div[data-testid="stAlert"] { border-radius: 10px !important; }
     justify-content: space-around;
     align-items: center;
 }
-.mobile-nav.visible {
-    display: flex !important;
-}
-.mobile-padding .block-container {
-    padding-bottom: 90px !important;
+
+@media (max-width: 767px) {
+    .mobile-nav {
+        display: flex !important;
+    }
+    .block-container {
+        padding-bottom: 90px !important;
+    }
+    /* Cacher la sidebar sur mobile */
+    section[data-testid="stSidebar"] {
+        display: none !important;
+    }
 }
 </style>
 """, unsafe_allow_html=True)
@@ -476,7 +482,6 @@ st.markdown("""
                 sb.style.width      = '220px';
                 sb.setAttribute('aria-expanded', 'true');
             }
-            // Cacher le bouton collapse
             var btn = document.querySelector('[data-testid="collapsedControl"]');
             if (btn) btn.style.display = 'none';
         }
@@ -802,7 +807,6 @@ with st.sidebar:
         text-transform:uppercase;padding:14px 18px 4px;">Navigation</div>
     """, unsafe_allow_html=True)
 
-    # Navigation via st.button natifs Streamlit (même onglet, pas de nouvel onglet)
     for pid, icon, label in NAV:
         clicked = st.button(
             f"{icon}  {label}",
@@ -815,7 +819,6 @@ with st.sidebar:
             st.query_params['page'] = pid
             st.rerun()
 
-    # JS : colorier le bouton actif et supprimer les labels parasites
     active_page = st.session_state.page
     st.markdown(f"""
     <style>
@@ -823,7 +826,6 @@ with st.sidebar:
         margin: 0 !important;
         padding: 0 !important;
     }}
-    /* Cacher les labels vides générés par Streamlit au-dessus des boutons */
     section[data-testid="stSidebar"] .stButton > div > label,
     section[data-testid="stSidebar"] .stButton [data-testid="stWidgetLabel"],
     section[data-testid="stSidebar"] [data-testid="InputInstructions"] {{
@@ -859,7 +861,6 @@ with st.sidebar:
                 b.style.removeProperty('background');
             }}
         }});
-        // Cacher labels vides (p tags vides ou quasi-vides)
         var labels = document.querySelectorAll(
             'section[data-testid="stSidebar"] .stButton p'
         );
@@ -881,7 +882,7 @@ with st.sidebar:
 
 
 # ══════════════════════════════════════════════════════════════════
-# MOBILE BOTTOM NAV
+# MOBILE BOTTOM NAV — CSS PURE, pas de JavaScript
 # ══════════════════════════════════════════════════════════════════
 nav_btns_html = ''
 for pid, icon, label in NAV:
@@ -898,24 +899,9 @@ for pid, icon, label in NAV:
         f'</a>'
     )
 
-mobile_nav_html = (
-    '<div class="mobile-nav" id="mobileNav">' + nav_btns_html + '</div>'
-    '<script>'
-    'function applyMobileNav() {'
-    '  var nav = document.getElementById("mobileNav");'
-    '  if (!nav) return;'
-    '  if (window.innerWidth < 768) {'
-    '    nav.style.display = "flex";'
-    '    document.body.classList.add("mobile-padding");'
-    '  } else {'
-    '    nav.style.display = "none";'
-    '    document.body.classList.remove("mobile-padding");'
-    '  }'
-    '}'
-    'applyMobileNav();'
-    'window.addEventListener("resize", applyMobileNav);'
-    '</script>'
-)
+# ✅ CSS-only : pas de JS, pas de classe .visible à ajouter dynamiquement
+# Le @media (max-width: 767px) dans le bloc <style> gère tout automatiquement
+mobile_nav_html = '<div class="mobile-nav">' + nav_btns_html + '</div>'
 st.markdown(mobile_nav_html, unsafe_allow_html=True)
 
 
