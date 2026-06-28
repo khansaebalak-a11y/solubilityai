@@ -405,12 +405,12 @@ div[data-testid="stAlert"] { border-radius: 10px !important; }
 .rk-best-dk { color: #38b2ac !important; font-weight: 700 !important; }
 
 /* ══════════════════════════════════════════
-   MOBILE NAV — Fix sidebar invisible sur mobile
+   MOBILE NAV — sidebar visible desktop, nav bas sur mobile
    ══════════════════════════════════════════ */
 
-/* Barre du bas : cachée par défaut (desktop) */
+/* Barre du bas : cachée sur desktop par défaut */
 .mobile-nav {
-    display: none;
+    display: none !important;
     position: fixed;
     bottom: 0;
     left: 0;
@@ -423,23 +423,31 @@ div[data-testid="stAlert"] { border-radius: 10px !important; }
     align-items: center;
 }
 
-@media (max-width: 768px) {
-    /* Cacher la sidebar Streamlit sur mobile */
-    section[data-testid="stSidebar"] {
+/* DESKTOP : sidebar visible, mobile-nav cachée */
+@media screen and (min-width: 768px) {
+    .mobile-nav {
         display: none !important;
     }
-    /* Espace en bas pour ne pas cacher le contenu */
+    section[data-testid="stSidebar"] {
+        display: flex !important;
+        visibility: visible !important;
+    }
+}
+
+/* MOBILE : sidebar cachée, barre du bas visible */
+@media screen and (max-width: 767px) {
+    section[data-testid="stSidebar"],
+    [data-testid="collapsedControl"] {
+        display: none !important;
+        visibility: hidden !important;
+    }
     .block-container {
         padding-bottom: 90px !important;
-    }
-    /* Afficher la barre du bas */
-    .mobile-nav {
-        display: flex !important;
-    }
-    /* Réduire padding latéral sur mobile */
-    .block-container {
         padding-left: 0.8rem !important;
         padding-right: 0.8rem !important;
+    }
+    .mobile-nav {
+        display: flex !important;
     }
 }
 </style>
